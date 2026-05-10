@@ -1,17 +1,18 @@
 {
-  "name": "personal-assistant-heart-starter",
+  "name": "open-relay-assistant",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "tsx src/heart.ts",
-    "once": "tsx src/heart.ts --once",
-    "check-config": "tsx src/heart.ts --check-config",
+    "check-config": "tsx heart.ts --check-config",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^22.15.30",
+    "@types/node": "^25.6.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.8.3"
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }

@@ -1,15 +1,11 @@
 node_modules/
 dist/
-.env
-.env.*
-!.env.example
 
 # Local assistant runtime data; never commit live state or task history.
-runtime/logs/*
-!runtime/logs/.gitkeep
-runtime/state/*
-!runtime/state/.gitkeep
-.tli/
+heart/logs/*
+heart/logs/life.md
+heart/state/*
+!heart/state/.gitkeep
 
 # OS/editor noise.
 .DS_Store
