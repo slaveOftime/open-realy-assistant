@@ -1,0 +1,17 @@
+{
+  "name": "personal-assistant-heart-starter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/heart.ts",
+    "once": "tsx src/heart.ts --once",
+    "check-config": "tsx src/heart.ts --check-config",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "tsx": "^4.21.0",
+    "typescript": "^5.8.3"
+  }
+}
