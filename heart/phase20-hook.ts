@@ -21,6 +21,17 @@ const normalSessionPromptReadyMs = 10 * 60_000;
 const hiddenIdleTaskStatuses = new Set(["review", "done"]);
 const idleSupervisedRepromptMs = 15 * 60_000;
 
+function readJsonObject(filePath: string): Record<string, unknown> | null {
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(filePath, "utf8"));
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function getTaskIdFromSessionTags(selectionSession: SessionSelection["supervisedSessions"][number]): string | null {
   const taskTag = selectionSession.tags?.find((tag) => tag.startsWith("task:"));
   return taskTag ? taskTag.slice("task:".length) : null;
@@ -40,12 +51,8 @@ function readLinkedTaskStatus(
     return null;
   }
 
-  try {
-    const parsed = JSON.parse(readFileSync(taskFile, "utf8")) as { status?: unknown };
-    return typeof parsed.status === "string" ? parsed.status : null;
-  } catch {
-    return null;
-  }
+  const parsed = readJsonObject(taskFile);
+  return typeof parsed?.status === "string" ? parsed.status : null;
 }
 
 function buildIdleSupervisedSessionsSection(

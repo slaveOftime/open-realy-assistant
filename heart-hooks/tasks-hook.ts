@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { log } from "../heart/logging.ts";
 import type { HeartHookContext } from "../heart/phase20-hook.ts";
 import type { SessionInfo } from "../heart/types.ts";
 import { formatHumanLocalTimestamp, parseTimestampMs, repoRoot, sanitize, toErrorMessage } from "./shared.ts";
@@ -114,7 +115,7 @@ function isMissingTliStoreError(error: unknown): boolean {
   return getCommandFailureOutput(error).includes("could not find '.tli'");
 }
 
-function readTliStateSnapshot(limit = tliStateLimit): TliStateSnapshot | null {
+function readTliStateSnapshot(context: HeartHookContext, limit = tliStateLimit): TliStateSnapshot | null {
   let lastLookupFailure: unknown = null;
 
   for (const executable of getTliExecutableCandidates()) {
@@ -127,7 +128,8 @@ function readTliStateSnapshot(limit = tliStateLimit): TliStateSnapshot | null {
           encoding: "utf8",
         },
       );
-      return tliStateSnapshotSchema.parse(JSON.parse(output));
+      const parsed: unknown = JSON.parse(output);
+      return tliStateSnapshotSchema.parse(parsed);
     } catch (error) {
       if (isSpawnLookupFailure(error)) {
         lastLookupFailure = error;
@@ -137,13 +139,13 @@ function readTliStateSnapshot(limit = tliStateLimit): TliStateSnapshot | null {
         return null;
       }
 
-      console.error(`Error reading tli state via ${executable}: ${toErrorMessage(error)}`);
+      log(context.runtimeContext, `Error reading tli state via ${executable}: ${toErrorMessage(error)}`);
       return null;
     }
   }
 
   if (lastLookupFailure) {
-    console.error(`Error reading tli state: ${toErrorMessage(lastLookupFailure)}`);
+    log(context.runtimeContext, `Error reading tli state: ${toErrorMessage(lastLookupFailure)}`);
   }
   return null;
 }
@@ -164,7 +166,7 @@ function shouldIgnoreTask(task: TliStateTask): boolean {
   return ignoredTaskStatuses.has(task.status);
 }
 
-function readManagedTasks(): {
+function readManagedTasks(context: HeartHookContext): {
   readyTasks: ManagedTaskEntry[];
   readyCount: number;
   pendingDependencyTasks: ManagedTaskEntry[];
@@ -172,7 +174,7 @@ function readManagedTasks(): {
   activeTasks: ManagedTaskEntry[];
   activeCount: number;
 } {
-  const snapshot = readTliStateSnapshot();
+  const snapshot = readTliStateSnapshot(context);
   if (!snapshot) {
     return {
       readyTasks: [],
@@ -312,12 +314,12 @@ function buildTaskSection(
   ].filter(Boolean).join("\n");
 }
 
-function readPromptTemplate(mode: "compact" | "full"): string | null {
+function readPromptTemplate(context: HeartHookContext, mode: "compact" | "full"): string | null {
   const promptPath = mode === "compact" ? compactPromptPath : fullPromptPath;
   try {
     return readFileSync(promptPath, "utf8").trim();
   } catch (error) {
-    console.error(`Error reading task hook prompt template: ${toErrorMessage(error)}`);
+    log(context.runtimeContext, `Error reading task hook prompt template: ${toErrorMessage(error)}`);
     return null;
   }
 }
@@ -339,7 +341,7 @@ const taskTrackerHookImpl = (context: HeartHookContext): string | null => {
   void context.now;
   const nowMs = Date.now();
   const mode = getPromptMode(context.sessionKey, nowMs);
-  const trackedTasks = readManagedTasks();
+  const trackedTasks = readManagedTasks(context);
   const dueTasks = trackedTasks.readyTasks.sort(compareReadyTasks);
   const pendingDependencyTasks = trackedTasks.pendingDependencyTasks.sort(compareReadyTasks);
   const activeTasks = trackedTasks.activeTasks.sort(compareUpdatedDesc);
@@ -370,7 +372,7 @@ const taskTrackerHookImpl = (context: HeartHookContext): string | null => {
     mode,
   );
 
-  const template = readPromptTemplate(mode);
+  const template = readPromptTemplate(context, mode);
   if (!template) {
     return null;
   }

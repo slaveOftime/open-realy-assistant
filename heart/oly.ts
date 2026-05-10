@@ -3,6 +3,8 @@ import { log } from "./logging.ts";
 import type { CommandResult, HeartRuntimeContext } from "./types.ts";
 import { toErrorMessage } from "./utils.ts";
 
+const sessionInputChunkLength = 3_000;
+
 export function runOly(context: HeartRuntimeContext, args: string[], check = true): CommandResult {
   const result = spawnSync("oly", args, {
     cwd: context.config.launch.cwd,
@@ -131,7 +133,7 @@ export function sendSessionInputChunked(
     return { ok: true, stdout: "" };
   }
 
-  for (const chunk of splitSessionInput(message, 3_000)) {
+  for (const chunk of splitSessionInput(message, sessionInputChunkLength)) {
     const result = sendSessionInput(context, sessionId, chunk, false);
     if (!result.ok) {
       return result;

@@ -17,6 +17,20 @@ type LifecycleState = {
   exitCode?: number;
 };
 
+function isLifecycleState(value: unknown): value is LifecycleState {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<Record<keyof LifecycleState, unknown>>;
+  return typeof candidate.pid === "number"
+    && typeof candidate.startedAt === "string"
+    && typeof candidate.lastHeartbeatAt === "string"
+    && typeof candidate.lastEvent === "string"
+    && typeof candidate.expectedStop === "boolean"
+    && (candidate.stopReason === null || typeof candidate.stopReason === "string");
+}
+
 let lifecycleState: LifecycleState | null = null;
 let lifecycleExitRecorded = false;
 
@@ -136,7 +150,12 @@ function readPreviousLifecycleState(context: HeartRuntimeContext): LifecycleStat
   }
 
   try {
-    return JSON.parse(readFileSync(context.config.artifacts.lifecycleStateFile, "utf8")) as LifecycleState;
+    const parsed: unknown = JSON.parse(readFileSync(context.config.artifacts.lifecycleStateFile, "utf8"));
+    if (isLifecycleState(parsed)) {
+      return parsed;
+    }
+    appendLifecycleFailure(context, "Previous lifecycle state has an invalid shape.");
+    return null;
   } catch (error) {
     appendLifecycleFailure(context, `Failed to parse previous lifecycle state: ${toErrorMessage(error)}`);
     return null;

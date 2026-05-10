@@ -13,8 +13,11 @@ export type SessionPromptReadiness = {
 
 function parseSessionList(context: HeartRuntimeContext, json: string): SessionListResponse | null {
   try {
-    const parsed = JSON.parse(json) as SessionListResponse;
-    return Array.isArray(parsed.items) ? parsed : null;
+    const parsed: unknown = JSON.parse(json);
+    if (!parsed || typeof parsed !== "object" || !("items" in parsed) || !Array.isArray(parsed.items)) {
+      return null;
+    }
+    return { items: parsed.items as SessionInfo[] };
   } catch (error) {
     log(context, `Error parsing session list: ${toErrorMessage(error)}`);
     return null;
