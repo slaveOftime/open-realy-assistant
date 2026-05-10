@@ -8,13 +8,13 @@ import {
 } from "./heart/types.ts";
 import { readText } from "./heart/utils.ts";
 
-const AssistantName = "gogo";
-const PrimarySessionTitle = "gogo";
-const SupervisedSessionTag = "gogo";
-
-export const defaultAssistantCommand = "copilot";
-export const defaultAssistantArguments = [
-  "--model", "gpt-5.4",
+const assistantName = "gogo";
+const primarySessionTitle = "gogo";
+const supervisedSessionTag = "gogo";
+const assistantCommand = "copilot";
+const assistantArguments = [
+  "--model",
+  "gpt-5.4",
   "--allow-all-urls",
   "--allow-all-tools",
   "--allow-all-paths",
@@ -22,25 +22,33 @@ export const defaultAssistantArguments = [
 
 const repoRoot = dirname(fileURLToPath(import.meta.url));
 const isEntrypoint = process.argv[1] === fileURLToPath(import.meta.url);
+const checkConfig = process.argv.includes("--check-config");
+
+const promptFiles = {
+  initialPromptFile: join(repoRoot, "prompts", "soul.md"),
+  sleepPromptFile: join(repoRoot, "prompts", "sleep.md"),
+  taskHookPromptFile: join(repoRoot, "heart-hooks", "tasks-hook.md"),
+  compactTaskHookPromptFile: join(repoRoot, "heart-hooks", "tasks-hook-compact.md"),
+} as const;
 
 function createHeartConfig(): HeartRuntimeConfig {
   return {
     launch: {
       cwd: repoRoot,
-      command: defaultAssistantCommand,
-      arguments: defaultAssistantArguments,
+      command: assistantCommand,
+      arguments: assistantArguments,
     },
     identity: {
-      agentName: AssistantName,
-      primarySessionTitle: PrimarySessionTitle,
-      childSessionTitlePrefixes: [`${PrimarySessionTitle}-`],
-      supervisedSessionTag: SupervisedSessionTag,
-      runtimeTitle: `${PrimarySessionTitle}-heart`,
-      attentionNotificationTitle: `${AssistantName} needs attention`,
+      agentName: assistantName,
+      primarySessionTitle,
+      childSessionTitlePrefixes: [`${primarySessionTitle}-`],
+      supervisedSessionTag,
+      runtimeTitle: `${primarySessionTitle}-heart`,
+      attentionNotificationTitle: `${assistantName} needs attention`,
     },
     prompts: {
-      initialPromptFile: join(repoRoot, "prompts", "soul.md"),
-      sleepPromptFile: join(repoRoot, "prompts", "sleep.md"),
+      initialPromptFile: promptFiles.initialPromptFile,
+      sleepPromptFile: promptFiles.sleepPromptFile,
     },
     artifacts: {
       logFile: join(repoRoot, "heart", "logs", "heart.log"),
@@ -63,15 +71,15 @@ function createHeartConfig(): HeartRuntimeConfig {
 function validateHeartConfig(config: HeartRuntimeConfig): void {
   readText(config.prompts.initialPromptFile);
   readText(config.prompts.sleepPromptFile);
-  readText(join(repoRoot, "heart-hooks", "tasks-hook.md"));
-  readText(join(repoRoot, "heart-hooks", "tasks-hook-compact.md"));
+  readText(promptFiles.taskHookPromptFile);
+  readText(promptFiles.compactTaskHookPromptFile);
 }
 
 if (isEntrypoint) {
   const { run } = await import("./heart/main.ts");
   const config = createHeartConfig();
 
-  if (process.argv.includes("--check-config")) {
+  if (checkConfig) {
     validateHeartConfig(config);
     console.log(
       `Configuration OK for ${config.identity.agentName}; title=${config.identity.primarySessionTitle}; tag=${config.identity.supervisedSessionTag}; cwd=${config.launch.cwd}`,

@@ -1,6 +1,6 @@
 # Open Relay Assistant Heart Starter
 
-This starter now follows the same broad runtime shape as Jarvis, but with the repo-specific behavior stripped out:
+This starter follows the same broad runtime shape as Jarvis, but with repo-specific behavior stripped out:
 
 - `heart.ts` is the main entrypoint
 - `heart\` holds the reusable supervision runtime
